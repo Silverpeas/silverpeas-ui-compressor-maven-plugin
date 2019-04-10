@@ -6,84 +6,69 @@
     <version>7</version>
   </parent>
 
-  <groupId>net.alchim31.maven</groupId>
-  <artifactId>yuicompressor-maven-plugin</artifactId>
-  <version>1.5.2-SNAPSHOT</version>
+  <groupId>org.silverpeas.maven</groupId>
+  <artifactId>silverpeas-ui-compressor-maven-plugin</artifactId>
+  <version>1.6-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
-  <name>YUI Compressor Maven Mojo</name>
-  <url>http://github.com/davidB/${project.artifactId}</url>
-  <inceptionYear>2012</inceptionYear>
+  <name>Silverpeas's UI Compressor Maven Mojo</name>
+  <url>https://github.com/Silverpeas/silverpeas-ui-compressor-maven-plugin</url>
+  <inceptionYear>2019</inceptionYear>
   <description>
     To compress (Minify + Ofuscate) Javascript files and CSS
-    files (using YUI Compressor from Julien Lecomte) and/or to check
+    files (using Silverpeas's UI Compressor) and/or to check
     Javascript files with jslint.
   </description>
 
-  <licenses>
-    <license>
-      <name>Public domain (Unlicense)</name>
-      <url>http://unlicense.org/</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-
   <scm>
-    <connection>scm:git:git://github.com/davidB/${project.artifactId}.git</connection>
-    <developerConnection>scm:git:git@github.com:davidB/${project.artifactId}.git</developerConnection>
-    <url>https://github.com/davidB/${project.artifactId}/</url>
+    <connection>scm:git:git@github.com:Silverpeas/silverpeas-ui-compressor-maven-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:Silverpeas/silverpeas-ui-compressor-maven-plugin.git</developerConnection>
+    <url>https://github.com/Silverpeas/silverpeas-ui-compressor-maven-plugin</url>
     <tag>HEAD</tag>
   </scm>
 
-  <issueManagement>
-    <system>github</system>
-    <url>http://github.com/davidB/${project.artifactId}/issues#issue/</url>
-  </issueManagement>
+  <repositories>
+    <repository>
+      <id>Silverpeas</id>
+      <layout>default</layout>
+      <name>Silverpeas Repository</name>
+      <url>http://www.silverpeas.org/nexus/content/groups/silverpeas</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
-  <developers>
-    <developer>
-      <id>david.bernard</id>
-      <name>David Bernard</name>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
-
-  <contributors>
-    <contributor>
-      <name>Piotr Kuczynski</name>
-      <email>piotr.kuczynski@gmail.com</email>
-      <roles>
-        <role>Contributor</role>
-      </roles>
-      <timezone>+1</timezone>
-    </contributor>
-    <contributor>
-      <name>Dave Hughes</name>
-      <email>dlh3@sfu.ca</email>
-      <roles>
-        <role>Contributor</role>
-      </roles>
-      <timezone>-8</timezone>
-    </contributor>
-    <contributor>
-      <name>Aneesh Joseph</name>
-      <email>admin@coderplus.com</email>
-      <roles>
-        <role>Contributor</role>
-      </roles>
-      <timezone>+5.5</timezone>
-    </contributor>
-  </contributors>
+  <distributionManagement>
+    <repository>
+      <id>silverpeas</id>
+      <name>Repository Silverpeas</name>
+      <layout>default</layout>
+      <url>http://www.silverpeas.org/nexus/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>silverpeas-snapshots</id>
+      <name>Snapshots Repository Silverpeas</name>
+      <layout>default</layout>
+      <url>http://www.silverpeas.org/nexus/content/repositories/snapshots/</url>
+    </snapshotRepository>
+    <site>
+      <id>silverpeas_repository</id>
+      <url>scp://www.silverpeas.org/var/www/docs</url>
+    </site>
+  </distributionManagement>
 
   <properties>
+    <next.release>1.6</next.release>
+    <ui.compressor.version>2.5-SNAPSHOT</ui.compressor.version>
     <maven.version>3.0.4</maven.version>
     <runtime.log>target/velocity.log</runtime.log>
     <maven.reporting.version>3.0</maven.reporting.version>
-    <maven.compiler.source>1.6</maven.compiler.source>
-    <maven.compiler.target>1.6</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
     <encoding>UTF-8</encoding>
     <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
     <github.global.server>github</github.global.server>
@@ -93,23 +78,11 @@
     <maven>${maven.version}</maven>
   </prerequisites>
 
-  <!-- dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>rhino</groupId>
-        <artifactId>js</artifactId>
-        <version>1.7R2</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement-->
-
   <dependencies>
     <dependency>
-      <groupId>com.yahoo.platform.yui</groupId>
-      <artifactId>yuicompressor</artifactId>
-      <!-- 2.4.8 seems to have issue on windows : https://github.com/yui/yuicompressor/issues/78 -->
-      <!-- 2.4.8 failed to process empty file (demo01) : https://github.com/yui/yuicompressor/issues/130 -->
-      <version>2.4.7</version>
+      <groupId>org.silverpeas</groupId>
+      <artifactId>silverpeas-ui-compressor</artifactId>
+      <version>${ui.compressor.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -325,6 +298,14 @@
           </dependency>
         </dependencies>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>8</source>
+          <target>8</target>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -360,38 +341,6 @@
                   <goal>install</goal>
                   <goal>run</goal>
                 </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>release</id>
-      <activation>
-        <property>
-          <name>performRelease</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-site-plugin</artifactId>
-          </plugin>
-          <plugin>
-            <groupId>com.github.github</groupId>
-            <artifactId>site-maven-plugin</artifactId>
-            <version>0.10</version>
-            <configuration>
-              <message>Building site for ${project.version}</message>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>site</goal>
-                </goals>
-                <phase>site</phase>
               </execution>
             </executions>
           </plugin>

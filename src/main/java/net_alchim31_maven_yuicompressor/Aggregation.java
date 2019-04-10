@@ -2,6 +2,7 @@ package net_alchim31_maven_yuicompressor;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,6 +111,12 @@ public class Aggregation {
 
     private void addInto(String include, List<File> includedFiles, Collection<File> previouslyIncludedFiles) throws Exception {
         if (include.indexOf('*') > -1) {
+            Collection<String> previouslyIncludedFilePaths = new ArrayList<>();
+            if (previouslyIncludedFiles != null) {
+              for(final File file : previouslyIncludedFiles) {
+                previouslyIncludedFilePaths.add(file.getCanonicalPath());
+              }
+            }
             DirectoryScanner scanner = newScanner();
             scanner.setIncludes(new String[] { include });
             scanner.scan();
@@ -117,7 +124,7 @@ public class Aggregation {
             Arrays.sort(rpaths);
             for (String rpath : rpaths) {
                 File file = new File(scanner.getBasedir(), rpath);
-                if (!includedFiles.contains(file) && (previouslyIncludedFiles == null || !previouslyIncludedFiles.contains(file))) {
+                if (!includedFiles.contains(file) && (!previouslyIncludedFilePaths.contains(file.getCanonicalPath()))) {
                     includedFiles.add(file);
                 }
             }

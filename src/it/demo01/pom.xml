@@ -45,7 +45,7 @@
     <plugins>
       <plugin>
         <groupId>@project.groupId@</groupId>
-        <artifactId>yuicompressor-maven-plugin</artifactId>
+        <artifactId>silverpeas-ui-compressor-maven-plugin</artifactId>
         <version>@project.version@</version>
         <executions>
           <execution>
