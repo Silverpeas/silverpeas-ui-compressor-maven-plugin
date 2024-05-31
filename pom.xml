@@ -10,7 +10,7 @@
 
   <groupId>org.silverpeas.maven</groupId>
   <artifactId>silverpeas-ui-compressor-maven-plugin</artifactId>
-  <version>1.7-SNAPSHOT</version>
+  <version>1.7</version>
   <packaging>maven-plugin</packaging>
 
   <name>Silverpeas's UI Compressor Maven Mojo</name>
@@ -65,7 +65,7 @@
 
   <properties>
     <next.release>1.7</next.release>
-    <ui.compressor.version>2.6-SNAPSHOT</ui.compressor.version>
+    <ui.compressor.version>2.6</ui.compressor.version>
     <maven.version>3.0.4</maven.version>
     <runtime.log>target/velocity.log</runtime.log>
     <maven.reporting.version>3.0</maven.reporting.version>
