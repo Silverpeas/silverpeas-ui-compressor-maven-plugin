@@ -16,7 +16,7 @@ jQuery.fn.uniform = function(settings) {
       
       while(typeof(parent) == 'object') {
         if(parent) {
-          if(parent[0] && (parent[0].className.indexOf(settings.holder_class) >= 0)) {
+          if(parent[0]?.className.indexOf(settings.holder_class) >= 0) {
             parent.addClass(settings.focused_class);
             return;
           } // if

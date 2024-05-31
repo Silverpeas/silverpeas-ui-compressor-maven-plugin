@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonatype.oss</groupId>
@@ -8,14 +10,14 @@
 
   <groupId>org.silverpeas.maven</groupId>
   <artifactId>silverpeas-ui-compressor-maven-plugin</artifactId>
-  <version>1.6</version>
+  <version>1.7-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>Silverpeas's UI Compressor Maven Mojo</name>
   <url>https://github.com/Silverpeas/silverpeas-ui-compressor-maven-plugin</url>
   <inceptionYear>2019</inceptionYear>
   <description>
-    To compress (Minify + Ofuscate) Javascript files and CSS
+    To compress (Minify + Obfuscate) Javascript files and CSS
     files (using Silverpeas's UI Compressor) and/or to check
     Javascript files with jslint.
   </description>
@@ -32,7 +34,7 @@
       <id>Silverpeas</id>
       <layout>default</layout>
       <name>Silverpeas Repository</name>
-      <url>http://www.silverpeas.org/nexus/content/groups/silverpeas</url>
+      <url>https://nexus3.silverpeas.org/repository/silverpeas</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -47,13 +49,13 @@
       <id>silverpeas</id>
       <name>Repository Silverpeas</name>
       <layout>default</layout>
-      <url>http://www.silverpeas.org/nexus/content/repositories/releases/</url>
+      <url>https://nexus3.silverpeas.org/repository/releases/</url>
     </repository>
     <snapshotRepository>
       <id>silverpeas-snapshots</id>
       <name>Snapshots Repository Silverpeas</name>
       <layout>default</layout>
-      <url>http://www.silverpeas.org/nexus/content/repositories/snapshots/</url>
+      <url>https://nexus3.silverpeas.org/repository/snapshots/</url>
     </snapshotRepository>
     <site>
       <id>silverpeas_repository</id>
@@ -62,8 +64,8 @@
   </distributionManagement>
 
   <properties>
-    <next.release>1.6</next.release>
-    <ui.compressor.version>2.5</ui.compressor.version>
+    <next.release>1.7</next.release>
+    <ui.compressor.version>2.6-SNAPSHOT</ui.compressor.version>
     <maven.version>3.0.4</maven.version>
     <runtime.log>target/velocity.log</runtime.log>
     <maven.reporting.version>3.0</maven.reporting.version>
@@ -200,11 +202,11 @@
                <windowtitle>${project.name} API Reference (${project.version}, r${buildNumber})</windowtitle>
                 -->
                 <links>
-                  <link>http://java.sun.com/j2se/${maven.compiler.source}/docs/api/</link>
-                  <link>http://slf4j.org/api/</link>
-                  <link>http://commons.apache.org/lang/api-release/</link>
-                  <link>http://commons.apache.org/io/api-release/</link>
-                  <link>http://junit.sourceforge.net/javadoc/</link>
+                  <link>https://docs.oracle.com/en/java/javase/11/docs/api/</link>
+                  <link>https://slf4j.org/api/</link>
+                  <link>https://commons.apache.org/proper/commons-lang/apidocs/</link>
+                  <link>https://commons.apache.org/proper/commons-io/apidocs/</link>
+                  <link>https://junit.org/junit4/javadoc/4.8/</link>
                 </links>
                 <!-- additionalparam>-nopackagediagram</additionalparam-->
                 <!-- additionalparam>-sourceclasspath ${project.build.outputDirectory}</additionalparam-->
@@ -261,7 +263,7 @@
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
-            <artifactId>java15</artifactId>
+            <artifactId>java18</artifactId>
             <version>1.0</version>
           </signature>
         </configuration>
@@ -302,8 +304,8 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>8</source>
-          <target>8</target>
+          <source>${maven.compiler.source}</source>
+          <target>${maven.compiler.target}</target>
         </configuration>
       </plugin>
     </plugins>
