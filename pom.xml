@@ -1,25 +1,25 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonatype.oss</groupId>
     <artifactId>oss-parent</artifactId>
-    <version>7</version>
+    <version>9</version>
   </parent>
 
   <groupId>org.silverpeas.maven</groupId>
   <artifactId>silverpeas-ui-compressor-maven-plugin</artifactId>
-  <version>1.7</version>
+  <version>2.0-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
-  <name>Silverpeas's UI Compressor Maven Mojo</name>
+  <name>Silverpeas's UI Compressor Maven Plugin</name>
   <url>https://github.com/Silverpeas/silverpeas-ui-compressor-maven-plugin</url>
   <inceptionYear>2019</inceptionYear>
   <description>
-    To compress (Minify + Obfuscate) Javascript files and CSS
-    files (using Silverpeas's UI Compressor) and/or to check
-    Javascript files with jslint.
+    A Maven plugin to minify the JavaScript and the CSS resources of Silverpeas. The JavaScript is
+    minified with the Google Closure Compiler and the CSS with ph-css, both supporting the latest
+    ECMAScript and CSS syntaxes.
   </description>
 
   <scm>
@@ -57,40 +57,68 @@
       <layout>default</layout>
       <url>https://nexus3.silverpeas.org/repository/snapshots/</url>
     </snapshotRepository>
-    <site>
-      <id>silverpeas_repository</id>
-      <url>scp://www.silverpeas.org/var/www/docs</url>
-    </site>
   </distributionManagement>
 
   <properties>
-    <next.release>1.7</next.release>
-    <ui.compressor.version>2.6</ui.compressor.version>
-    <maven.version>3.0.4</maven.version>
-    <runtime.log>target/velocity.log</runtime.log>
-    <maven.reporting.version>3.0</maven.reporting.version>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <next.release>2.0</next.release>
+    <!-- Keep a Closure Compiler release still compiled for Java 11 (bytecode 55): the minifier runs
+         on the build JVM, so a version targeting Java 21 (v20250402+) would fail on our Java 17
+         toolchain with an UnsupportedClassVersionError. -->
+    <closure.compiler.version>v20240317</closure.compiler.version>
+    <!-- ph-css 8.2.x supports the CSS Nesting Module Level 1 and the other modern CSS syntaxes;
+         8.2.1 is compiled for Java 17 (bytecode 61), safe on our Java 17 toolchain. -->
+    <phcss.version>8.2.1</phcss.version>
+    <junit.version>6.1.1</junit.version>
+    <maven.version>3.8.6</maven.version>
+    <maven.compiler.release>17</maven.compiler.release>
     <encoding>UTF-8</encoding>
-    <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
-    <github.global.server>github</github.global.server>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
   <prerequisites>
     <maven>${maven.version}</maven>
   </prerequisites>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
+    <!-- Google Closure Compiler: minifies the JavaScript with support of the modern ECMAScript
+         (ES6+: template literals, const/let, arrow functions, ...). -->
     <dependency>
-      <groupId>org.silverpeas</groupId>
-      <artifactId>silverpeas-ui-compressor</artifactId>
-      <version>${ui.compressor.version}</version>
+      <groupId>com.google.javascript</groupId>
+      <artifactId>closure-compiler</artifactId>
+      <version>${closure.compiler.version}</version>
+    </dependency>
+    <!-- ph-css: minifies the CSS with a real CSS parser supporting the latest syntaxes (CSS
+         nesting, custom properties, calc()/var(), @layer, :has(), @supports, ...). -->
+    <dependency>
+      <groupId>com.helger</groupId>
+      <artifactId>ph-css</artifactId>
+      <version>${phcss.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
       <version>${maven.version}</version>
       <scope>provided</scope>
+    </dependency>
+    <!-- provides the DirectoryScanner used to discover the resources to compress (maven-core is
+         'provided', so its own plexus-utils isn't part of the plugin realm at runtime). -->
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>4.0.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -99,15 +127,15 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.8.1</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- aligns the JUnit Platform launcher used by Surefire with the JUnit 6 engine. -->
     <dependency>
-      <groupId>org.sonatype.plexus</groupId>
-      <artifactId>plexus-build-api</artifactId>
-      <version>0.0.7</version>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -116,238 +144,21 @@
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-changes-plugin</artifactId>
-          <version>2.9</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>3.3</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jxr-plugin</artifactId>
-          <version>2.4</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>taglist-maven-plugin</artifactId>
-          <version>2.4</version>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.15.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.2</version>
+          <version>3.15.0</version>
         </plugin>
+        <!-- Surefire 3.x runs the tests on the JUnit Platform (JUnit Jupiter / JUnit 6). -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>2.7</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.1</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.1</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <version>2.3</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.9.1</version>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.5.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <configuration>
-          <templateFile>${basedir}/src/site/template-site.vm</templateFile>
-          <reportPlugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-plugin-plugin</artifactId>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-project-info-reports-plugin</artifactId>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <minmemory>128m</minmemory>
-                <maxmemory>512m</maxmemory>
-                <useStandardDocletOptions>true</useStandardDocletOptions>
-                <charset>${encoding}</charset>
-                <encoding>${encoding}</encoding>
-                <docencoding>${encoding}</docencoding>
-                <docfilessubdirs>true</docfilessubdirs>
-                <breakiterator>true</breakiterator>
-                <version>true</version>
-                <author>true</author>
-                <keywords>true</keywords>
-                <attach>false</attach>
-                <!--
-               <doctitle>${project.name} API Reference (${project.version}, r${buildNumber})</doctitle>
-               <windowtitle>${project.name} API Reference (${project.version}, r${buildNumber})</windowtitle>
-                -->
-                <links>
-                  <link>https://docs.oracle.com/en/java/javase/11/docs/api/</link>
-                  <link>https://slf4j.org/api/</link>
-                  <link>https://commons.apache.org/proper/commons-lang/apidocs/</link>
-                  <link>https://commons.apache.org/proper/commons-io/apidocs/</link>
-                  <link>https://junit.org/junit4/javadoc/4.8/</link>
-                </links>
-                <!-- additionalparam>-nopackagediagram</additionalparam-->
-                <!-- additionalparam>-sourceclasspath ${project.build.outputDirectory}</additionalparam-->
-                <!-- -sourceclasspath ${project.build.outputDirectory} -->
-                <excludePackageNames>${project.groupId}.example*:${project.groupId}.util.internal*</excludePackageNames>
-              </configuration>
-            </plugin>
-            <!--
-            <plugin>
-              <groupId>com.dzone.jdocs</groupId>
-              <artifactId>javadoc</artifactId>
-              <version>1.0</version>
-              <configuration>
-                <aggregate>true</aggregate>
-                <source>${java.src.version}</source>
-                <overview>${basedir}/src/main/java/overview.html</overview>
-              </configuration>
-            </plugin>
-            -->
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-jxr-plugin</artifactId>
-            </plugin>
-            <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>taglist-maven-plugin</artifactId>
-              <configuration>
-                <tags>
-                  <tag>TODO</tag>
-                  <tag>FIXME</tag>
-                  <tag>@todo</tag>
-                  <tag>@deprecated</tag>
-                </tags>
-              </configuration>
-            </plugin>
-            <plugin>
-              <artifactId>maven-changes-plugin</artifactId>
-              <reportSets>
-                <reportSet>
-                  <reports>
-                    <report>changes-report</report>
-                  </reports>
-                </reportSet>
-              </reportSets>
-            </plugin>
-          </reportPlugins>
-        </configuration>
-      </plugin>
-      <plugin>
-        <!-- make sure our code doesn't have 1.6 dependencies except where we know it see * http://mojo.codehaus.org/animal-sniffer/index.html * http://weblogs.java.net/blog/kohsuke/archive/2008/11/compiling_with.html -->
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.10</version>
-        <configuration>
-          <signature>
-            <groupId>org.codehaus.mojo.signature</groupId>
-            <artifactId>java18</artifactId>
-            <version>1.0</version>
-          </signature>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-changes-plugin</artifactId>
-        <configuration>
-          <template>announcement.md.vm</template>
-          <templateDirectory>announcements</templateDirectory>
-          <mailSender>
-            <name>David Bernard</name>
-            <email>david.bernard.31@gmail.com</email>
-          </mailSender>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-release-plugin</artifactId>
-        <version>2.4.2</version>
-        <configuration>
-          <releaseProfiles>release</releaseProfiles>
-          <goals>install animal-sniffer:check site deploy</goals>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-api</artifactId>
-            <version>1.8.1</version>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-provider-gitexe</artifactId>
-            <version>1.8.1</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>${maven.compiler.source}</source>
-          <target>${maven.compiler.target}</target>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>integration-tests</id>
-      <activation>
-        <property>
-          <name>maven.test.skip</name>
-          <value>!true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-invoker-plugin</artifactId>
-            <configuration>
-              <!-- debugging -->
-              <!--<mavenOpts>-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=y</mavenOpts>-->
-              <debug>false</debug>
-              <streamLogs>true</streamLogs>
-              <projectsDirectory>src/it</projectsDirectory>
-              <pomIncludes>
-                <pomInclude>**/pom.xml</pomInclude>
-              </pomIncludes>
-              <preBuildHookScript>setup.groovy</preBuildHookScript>
-              <postBuildHookScript>validate.groovy</postBuildHookScript>
-            </configuration>
-            <executions>
-              <execution>
-                <id>integration-test</id>
-                <goals>
-                  <goal>install</goal>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
