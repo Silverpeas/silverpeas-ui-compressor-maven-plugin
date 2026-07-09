@@ -8,7 +8,12 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.DirectoryScanner;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,7 +189,7 @@ public class UICompressorMojo extends AbstractMojo {
   }
 
   private void processDir(final File srcRoot, final File destRoot, final List<String> srcExcludes)
-      throws Exception {
+      throws MojoFailureException, MojoExecutionException, IOException {
     if (srcRoot == null || !srcRoot.exists()) {
       return;
     }
@@ -211,7 +216,7 @@ public class UICompressorMojo extends AbstractMojo {
     }
   }
 
-  private void processFile(final SourceFile src) throws Exception {
+  private void processFile(final SourceFile src) throws IOException, MojoExecutionException {
     final File inFile = src.toFile();
     final File outFile = src.toDestFile(suffix);
     if (isAlreadyMinified(inFile)) {
@@ -221,15 +226,29 @@ public class UICompressorMojo extends AbstractMojo {
       getLog().debug("Nothing to do, " + outFile + " is more recent than its source");
       return;
     }
-    final Charset charset = Charset.forName(encoding);
-    final String source = Files.readString(inFile.toPath(), charset);
-    final String result;
-    if (".js".equalsIgnoreCase(src.getExtension())) {
-      result = jsMinifier.minify(source, inFile.getName());
-    } else if (".css".equalsIgnoreCase(src.getExtension())) {
-      result = cssMinifier.minify(source);
-    } else {
+    final boolean js = ".js".equalsIgnoreCase(src.getExtension());
+    final boolean css = ".css".equalsIgnoreCase(src.getExtension());
+    if (!js && !css) {
       return;
+    }
+    final byte[] bytes = Files.readAllBytes(inFile.toPath());
+    Charset charset = Charset.forName(encoding);
+    String source;
+    try {
+      source = decode(bytes, charset);
+    } catch (final CharacterCodingException e) {
+      // the file isn't encoded in the configured charset: fall back to ISO-8859-1, which maps every
+      // byte value, so the file is still minified and its exact bytes are preserved on write.
+      getLog().warn("The file " + inFile + " isn't encoded in " + encoding +
+          ": falling back to ISO-8859-1 (please save it as " + encoding + ")");
+      charset = StandardCharsets.ISO_8859_1;
+      source = new String(bytes, charset);
+    }
+    final String result;
+    if (js) {
+      result = jsMinifier.minify(source, inFile.getName());
+    } else {
+      result = cssMinifier.minify(source);
     }
     final File parent = outFile.getParentFile();
     if (parent != null && !parent.exists() && !parent.mkdirs()) {
@@ -242,9 +261,25 @@ public class UICompressorMojo extends AbstractMojo {
     }
   }
 
+  /**
+   * Decodes the given bytes with the specified charset, reporting (instead of silently replacing)
+   * any malformed or unmappable byte sequence so that a wrongly encoded file can be detected.
+   */
+  private static String decode(final byte[] bytes, final Charset charset)
+      throws CharacterCodingException {
+    return charset.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT)
+        .decode(ByteBuffer.wrap(bytes))
+        .toString();
+  }
+
   private boolean isAlreadyMinified(final File file) {
     final String name = file.getName().toLowerCase();
-    return !suffix.isEmpty() && (name.endsWith(suffix + ".js") || name.endsWith(suffix + ".css"));
+    // take into account already minified assets like those coming from vendors, whatever their
+    // use of suffix (generally minified resources are expected to be ended by the word "min"
+    // followed by the resource extension).
+    return name.endsWith("min.js") || name.endsWith("min.css");
   }
 
   private static long ratioOfSize(final File source, final File dest) {
