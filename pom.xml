@@ -5,7 +5,7 @@
 
   <groupId>org.silverpeas.maven</groupId>
   <artifactId>silverpeas-ui-compressor-maven-plugin</artifactId>
-  <version>2.0.2</version>
+  <version>2.0.3-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>Silverpeas's UI Compressor Maven Plugin</name>
@@ -55,7 +55,7 @@
   </distributionManagement>
 
   <properties>
-    <next.release>2.0.2</next.release>
+    <next.release>2.0.3</next.release>
     <!-- Keep a Closure Compiler release still compiled for Java 11 (bytecode 55): the minifier runs
          on the build JVM, so a version targeting Java 21 (v20250402+) would fail on our Java 17
          toolchain with an UnsupportedClassVersionError. -->
