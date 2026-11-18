@@ -20,6 +20,12 @@ the YUI Compressor (Rhino based, ES5 / old CSS only), which couldn't handle the 
 the build output directory. The `.js` and `.css` files of the resources directories and of the web
 application source directory (`src/main/webapp`) are processed.
 
+In a minified stylesheet, the `@import` of another stylesheet minified by the plugin is relocated to
+the minified version of it (`@import url(yui-menu.css)` becomes `@import url(yui-menu-min.css)`).
+Only the relative locations of stylesheets of the same source directory are relocated: absolute
+locations, URLs and stylesheets not minified by the plugin (excluded or already minified ones) are
+kept as they are.
+
 If a file cannot be parsed, or if its minified output wouldn't be smaller, the original content is
 kept so that the build is never broken nor bloated by a single faulty (or already minified) file.
 
