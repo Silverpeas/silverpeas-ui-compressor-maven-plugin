@@ -16,7 +16,9 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 /**
  * Compresses (minifies) the JavaScript and CSS resources of the project.
@@ -24,7 +26,8 @@ import java.util.List;
  * The JavaScript is minified with the Google Closure Compiler and the CSS with ph-css; both support
  * the latest ECMAScript and CSS syntaxes. For each {@code foo.js} (resp. {@code foo.css}) resource a
  * minified {@code foo-min.js} (resp. {@code foo-min.css}) file is generated next to it, in the build
- * output directory.
+ * output directory. The {@code @import} rules of a minified stylesheet targeting another stylesheet
+ * minified by the plugin are relocated to the minified version of the imported stylesheet.
  *
  * @author Silverpeas
  * @goal compress
@@ -211,17 +214,20 @@ public class UICompressorMojo extends AbstractMojo {
     }
     scanner.addDefaultExcludes();
     scanner.scan();
-    for (final String name : scanner.getIncludedFiles()) {
-      processFile(new SourceFile(srcRoot, destRoot, name, useProcessedResources));
+    final List<String> names = Arrays.stream(scanner.getIncludedFiles())
+        .filter(name -> !isAlreadyMinified(name))
+        .toList();
+    final CssImportRelocator importRelocator = new CssImportRelocator(names, suffix);
+    for (final String name : names) {
+      processFile(new SourceFile(srcRoot, destRoot, name, useProcessedResources),
+          location -> importRelocator.relocate(name, location));
     }
   }
 
-  private void processFile(final SourceFile src) throws IOException, MojoExecutionException {
+  private void processFile(final SourceFile src, final UnaryOperator<String> importLocator)
+      throws IOException, MojoExecutionException {
     final File inFile = src.toFile();
     final File outFile = src.toDestFile(suffix);
-    if (isAlreadyMinified(inFile)) {
-      return;
-    }
     if (!force && outFile.exists() && outFile.lastModified() > inFile.lastModified()) {
       getLog().debug("Nothing to do, " + outFile + " is more recent than its source");
       return;
@@ -248,7 +254,7 @@ public class UICompressorMojo extends AbstractMojo {
     if (js) {
       result = jsMinifier.minify(source, inFile.getName());
     } else {
-      result = cssMinifier.minify(source);
+      result = cssMinifier.minify(source, importLocator);
     }
     final File parent = outFile.getParentFile();
     if (parent != null && !parent.exists() && !parent.mkdirs()) {
@@ -274,8 +280,8 @@ public class UICompressorMojo extends AbstractMojo {
         .toString();
   }
 
-  private boolean isAlreadyMinified(final File file) {
-    final String name = file.getName().toLowerCase();
+  private static boolean isAlreadyMinified(final String fileName) {
+    final String name = fileName.toLowerCase();
     // take into account already minified assets like those coming from vendors, whatever their
     // use of suffix (generally minified resources are expected to be ended by the word "min"
     // followed by the resource extension).
